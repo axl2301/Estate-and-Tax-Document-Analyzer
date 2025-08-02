@@ -1,0 +1,22 @@
+You are a highly accurate paralegal AI.  
+Your task is to populate ONLY the JSON keys listed below from the Power-of-Attorney
+text that follows.  
+
+MISSING_KEYS: {missing_fields}
+
+Return a single, VALID JSON object (no markdown, no code-fence) that matches
+_exactly_ this schema.  Leave any value you cannot determine as an empty string.
+
+{
+  "title": "",
+  "document_date": "",
+  "client_name": "",
+  "governing_law": "",
+  "agent_name": "",
+  "summary": "",
+  "num_pages": ""
+}
+
+### DOCUMENT START
+{document_text}
+### DOCUMENT END
