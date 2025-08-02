@@ -1,8 +1,13 @@
 from __future__ import annotations
-import re, pathlib, importlib
-from typing import Dict, List
+import re
+import pathlib
+import json
+from typing import Dict
 from modules.ocr_utils import pdf_to_text
-from modules.po_constants import POA_FIELDS, REQUIRED_KEYS
+from modules.po_constants import POA_FIELDS
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
 
 # Regex patterns for extracting information from Power of Attorney documents
 TITLE_RE = re.compile(r"^.*?POWER OF ATTORNEY.*$", re.I | re.M)
@@ -44,6 +49,33 @@ def regex_pass(txt: str) -> Dict[str, str]:
     
     return data
 
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+client = OpenAI(
+    api_key=api_key
+    )
+
+LLM_TEMPLATE = pathlib.Path("prompts/poa_extract_prompt.txt").read_text()
+
+def llm_pass(text: str, missing: list[str]) -> dict:
+    
+    prompt = (
+        LLM_TEMPLATE
+        .replace("{missing_fields}", ", ".join(missing))
+        .replace("{document_text}", text)          
+    )
+
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        temperature=0,
+    )
+
+    return json.loads(response.choices[0].message.content)
+
 def extract_poa(file) -> Dict[str, str]:
     """
     Rule-based POA extractor (Milestone 3).
@@ -56,4 +88,17 @@ def extract_poa(file) -> Dict[str, str]:
     data.update(regex_pass(text))
     data["num_pages"] = str(pages)
 
+    missing = [k for k, v in data.items() if v == ""]
+    if "summary" not in missing:
+        missing.append("summary")
+
+    if missing:
+        gpt_out = llm_pass(text, missing)
+        for k in missing:
+            if k in gpt_out:
+                data[k] = gpt_out[k]
+
     return data
+
+
+
