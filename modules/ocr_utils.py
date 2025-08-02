@@ -1,6 +1,8 @@
 from typing import Tuple
 import io
 import pdfplumber
+from pdf2image import convert_from_bytes
+import pytesseract
 
 def pdf_to_text(pdf_bytes: bytes) -> Tuple[str, int]:
     """
@@ -22,3 +24,12 @@ def pdf_to_text(pdf_bytes: bytes) -> Tuple[str, int]:
     plain_text = "\f".join(page_texts).strip()
 
     return plain_text, num_pages 
+
+
+def pdf_to_ocr_text(pdf_bytes: bytes, dpi: int = 300) -> Tuple[str, int]:
+    """
+    Render each page at `dpi`, run pytesseract, return full text + page-count.
+    """
+    images = convert_from_bytes(pdf_bytes, dpi=dpi, fmt="png")     # fast, lossless
+    texts  = [pytesseract.image_to_string(img) for img in images]
+    return "\n".join(texts), len(images)

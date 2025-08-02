@@ -4,10 +4,19 @@ import pathlib
 import json
 from typing import Dict
 from modules.ocr_utils import pdf_to_text
-from modules.po_constants import POA_FIELDS
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+
+POA_FIELDS = {
+    "title": "",
+    "document_date": "",
+    "client_name": "",
+    "governing_law": "",
+    "agent_name": "",
+    "summary": "",
+    "num_pages": "",
+}
 
 # Regex patterns for extracting information from Power of Attorney documents
 TITLE_RE = re.compile(r"^.*?POWER OF ATTORNEY.*$", re.I | re.M)
