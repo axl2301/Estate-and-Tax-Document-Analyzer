@@ -12,4 +12,5 @@ dependencies = [
     "pytesseract>=0.3.13",
     "pytest>=8.4.1",
     "python-dotenv>=1.1.1",
+    "spacy>=3.8.7",
 ]
