@@ -13,5 +13,6 @@ dependencies = [
     "pytest>=8.4.1",
     "python-dotenv>=1.1.1",
     "spacy>=3.8.7",
+    "streamlit>=1.47.1",
     "tesseract>=0.1.3",
 ]
