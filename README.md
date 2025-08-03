@@ -52,8 +52,8 @@ If the user selected a Tax Return document, with OCR it will look for the requir
    Make a fork and clone it on your local machine:
 
 ```bash
-git clone https://github.com/your-user/axl2301-Estate-and-tax-document-analyzer.git
-cd Estate-and-tax-document-analyzer
+git clone https://github.com/your-user/axl2301-Estate-and-Tax-Document-Analyzer.git
+cd Estate-and-Tax-Document-Analyzer
 ```
 2. **Virtual environment and Dependencies**
 
