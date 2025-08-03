@@ -1,8 +1,11 @@
-from typing import Tuple
+from typing import Tuple, List, Dict
 import io
 import pdfplumber
-from pdf2image import convert_from_bytes
+from pdf2image import convert_from_path
+from PIL import Image
 import pytesseract
+from pytesseract import Output
+
 
 def pdf_to_text(pdf_bytes: bytes) -> Tuple[str, int]:
     """
@@ -26,10 +29,37 @@ def pdf_to_text(pdf_bytes: bytes) -> Tuple[str, int]:
     return plain_text, num_pages 
 
 
-def pdf_to_ocr_text(pdf_bytes: bytes, dpi: int = 300) -> Tuple[str, int]:
-    """
-    Render each page at `dpi`, run pytesseract, return full text + page-count.
-    """
-    images = convert_from_bytes(pdf_bytes, dpi=dpi, fmt="png")     # fast, lossless
-    texts  = [pytesseract.image_to_string(img) for img in images]
-    return "\n".join(texts), len(images)
+def pdf_to_images(pdf_path: str, dpi: int = 300) -> List[Image.Image]:
+    """Convierte el PDF en imágenes (una por página) a 300 dpi."""
+    return convert_from_path(pdf_path, dpi=dpi, fmt="png")
+
+def run_ocr(img: Image.Image, conf=50) -> List[Dict]:
+    """Palabras con bbox + metadata básica."""
+    d = pytesseract.image_to_data(img, output_type=Output.DICT)
+    words = []
+    for i, txt in enumerate(d["text"]):
+        if txt.strip() and int(d["conf"][i]) >= conf:
+            words.append(
+                {
+                    "text": txt.strip(),
+                    "x0": d["left"][i],
+                    "y0": d["top"][i],
+                    "x1": d["left"][i] + d["width"][i],
+                    "y1": d["top"][i] + d["height"][i],
+                    "block": d["block_num"][i],
+                    "par":   d["par_num"][i],
+                    "line":  d["line_num"][i],
+                }
+            )
+    return words
+
+def cluster_lines(words):
+    """Agrupa usando (block, par, line) que ya da Tesseract."""
+    groups = {}
+    for w in words:
+        key = (w["block"], w["par"], w["line"])
+        groups.setdefault(key, []).append(w)
+    # ordenamos las líneas según su posición vertical promedio
+    lines = sorted(groups.values(), key=lambda ln: sum(w["y0"] for w in ln)/len(ln))
+    # cada línea de izq. a der.
+    return [sorted(ln, key=lambda w: w["x0"]) for ln in lines]

@@ -1,38 +1,82 @@
+# modules/tax_extractor.py
 import re
-from modules.ocr_utils import pdf_to_ocr_text
+from modules.ocr_utils import pdf_to_images, run_ocr, cluster_lines
 
-_DIGITS = re.compile(r'[^0-9]')          # strip everything except digits
-def _grab(text: str, box_id: str) -> int:
-    """
-    Look for e.g.  '7 | 10,000'  or  '14| 876'
-    • negative look-behind ensures we don’t match the '7' inside '17|'
-    • allow arbitrary spaces between id and pipe
-    """
-    pat = re.compile(rf'(?<!\d){box_id}\s*\|\s*([0-9,\s]+)')
-    m   = pat.search(text)
-    if not m:
-        return 0
-    digits = _DIGITS.sub("", m.group(1))
-    # if we only captured the id itself (e.g. '15'), treat as missing
-    return int(digits) if digits and digits != box_id else 0
+# ─────────── Configuración ───────────
+# Solo campos obligatorios de la columna derecha
+FIELDS   = ["4","7","10","14","15","16","17"]
+NUMTOK   = re.compile(r"^[\d,.\-]+$")
+POS_TH   = 0.60   # umbral para la columna de montos (60% del ancho)
+LEFT_TH  = 0.40   # umbral para la columna de IDs    (40% del ancho)
 
-def extract_box_values(text: str, box_ids: set[str]) -> dict[str, int]:
-    return {bid: _grab(text, bid) for bid in box_ids}
+def _normal(txt: str) -> str:
+    """Minúsculas y sin puntuación de borde."""
+    return re.sub(r"[|,.\]\)\(:;{}\s]+$", "", txt.lower())
 
-RIGHT_BOXES = {"4", "7", "10", "14", "15", "16", "17"}
-LEFT_BOXES  = {"1","3","5a","5b","5c","5d","5e","6",
-               "8a","8b","8c","8e","9","11","12","13"}
+def extract_amounts_from_lines(lines):
+    res    = {fid: 0 for fid in FIELDS}
+    page_w = max(w["x1"] for ln in lines for w in ln)
 
-def blank_schema(keys=None):
-    full = (keys or (RIGHT_BOXES | LEFT_BOXES)) | RIGHT_BOXES
-    return {k: 0 for k in sorted(full)}
+    for i, ln in enumerate(lines):
+        # 1) detectar ID dentro de la banda izquierda
+        id_tok = next(
+            (w for w in ln
+             if _normal(w["text"]) in FIELDS
+             and w["x0"] <= LEFT_TH * page_w),
+            None
+        )
+        if not id_tok:
+            continue
+        fid = _normal(id_tok["text"])
+        if res[fid] != 0:
+            continue  # ya extraído
 
-def extract_amounts(pdf_bytes: bytes,
-                    include_left: bool = False) -> dict[str, int]:
-    txt, _ = pdf_to_ocr_text(pdf_bytes)
-    targets = RIGHT_BOXES | (LEFT_BOXES if include_left else set())
-    vals    = extract_box_values(txt, targets)
-    # Ensure every expected key is present
-    out = blank_schema(targets)
-    out.update(vals)
-    return out
+        # 2) buscar la última racha de números grandes a la derecha
+        tail = [w for w in ln if w["x0"] > id_tok["x1"]]
+        nums = []
+        for w in reversed(tail):
+            if w["x0"] <= POS_TH * page_w:
+                if nums: break
+                continue
+            if not NUMTOK.match(w["text"]):
+                if nums: break
+                continue
+            digits = re.sub(r"\D", "", w["text"])
+            if nums or "," in w["text"] or len(digits) >= 3:
+                nums.insert(0, w)
+
+        # 3) look-ahead si no hay en la misma línea
+        if not nums:
+            for j in range(i+1, len(lines)):
+                # parar al encontrar otro ID
+                if any(
+                    _normal(x["text"]) in FIELDS
+                    and x["x0"] <= LEFT_TH * page_w
+                    for x in lines[j]
+                ):
+                    break
+                for w in reversed(lines[j]):
+                    if w["x0"] <= POS_TH * page_w:
+                        if nums: break
+                        continue
+                    if not NUMTOK.match(w["text"]):
+                        if nums: break
+                        continue
+                    digits = re.sub(r"\D", "", w["text"])
+                    if nums or "," in w["text"] or len(digits) >= 3:
+                        nums.insert(0, w)
+                if nums:
+                    break
+
+        # 4) concatenar y convertir
+        raw   = "".join(w["text"] for w in nums)
+        clean = re.sub(r"[^\d\-]", "", raw)
+        res[fid] = int(clean) if clean else 0
+
+    return res
+
+def extract_from_pdf(pdf_path: str):
+    img   = pdf_to_images(pdf_path)[0]   # primera página
+    words = run_ocr(img)
+    lines = cluster_lines(words)
+    return extract_amounts_from_lines(lines)
