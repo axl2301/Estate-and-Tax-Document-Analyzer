@@ -10,9 +10,7 @@ dependencies = [
     "pdf2image>=1.17.0",
     "pdfplumber>=0.11.7",
     "pytesseract>=0.3.13",
-    "pytest>=8.4.1",
     "python-dotenv>=1.1.1",
-    "spacy>=3.8.7",
     "streamlit>=1.47.1",
     "tesseract>=0.1.3",
 ]
