@@ -89,7 +89,7 @@ Then visit localhost on your browser
 
 - **Estate extractor**: Full text is pushed to GPT-4o-mini with a carefully crafted prompt. The model returns the expected keys, plus a ≤ 100-word summary.
 - **Tax Return extractor**: 
-    1. Each page is through Tesseract to get word locations.
+    1. Each page is passed through Tesseract to get word locations.
     2. Searches for IDs by geometric rules (IDs listed in FIELDS)
     3. Extracts the amount related to those IDs (*Left side box support exists but is not 100 % reliable; minor tweaks to thresholds may be required*)
 
