@@ -104,8 +104,8 @@ def run_ocr(img: Image.Image, conf=50) -> List[Dict]:
 
 def cluster_lines(words: List[Dict]) -> List[List[Dict]]:
     """
-Groups words into lines using their block, paragraph, 
-and line numbers, ordering lines top-to-bottom and words left-to-right.
+    Groups words into lines using their block, paragraph, 
+    and line numbers, ordering lines top-to-bottom and words left-to-right.
 
     Args:
         words (List[Dict]): List of words with their bounding box and position data.

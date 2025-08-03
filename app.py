@@ -11,7 +11,7 @@ st.set_page_config(page_title="Estate & Tax Document Analyzer",
 st.title("Estate & Tax Document Analyzer")
 
 
-# Helper functions to format the results in a pretty format
+# Helper functions to format the results
 def render_poa(data: dict) -> None:
     """
     Output the extracted Power of Attorney data.
