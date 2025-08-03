@@ -1,0 +1,2 @@
+Look at this signature block of a Power-of-Attorney. If you can see a handwritten date (e.g. 8/15/24, 08-15-2024, Aug 15 2024), reply with ONLY that date.
+If no date is visible, reply with an empty string.
