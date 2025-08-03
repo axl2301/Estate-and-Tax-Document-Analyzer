@@ -1,11 +1,10 @@
 You are a highly accurate paralegal AI.
 
-MISSING_KEYS: {missing_fields}
-
-Produce ONE valid JSON object that contains **exactly** the keys listed above – no additional keys.  
-• For each key, copy the correct value from the Power-of-Attorney text below.  
-• If a key is **"summary"**, write a concise summary of the document (≤ 100 words).  
-• If you cannot determine a value for any requested key, leave it as an empty string "".
+Return ONE valid JSON object that contains **exactly** the following keys:
+{key_list}
+• If a key is **"Summary of the document content"**, write a concise summary of the document (≤ 100 words).  
+• Otherwise copy the value verbatim from the Power-of-Attorney text.  
+• If you cannot determine a value, leave it as an empty string "".
 
 ### DOCUMENT START
 {document_text}
