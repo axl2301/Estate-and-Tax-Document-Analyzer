@@ -61,7 +61,7 @@ Make sure you have Python and uv installed, then run
 
 ```bash
 uv venv
-uv source/bin/activate
+source .venv/bin/activate
 uv sync
 ```
 
